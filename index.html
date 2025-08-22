@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>出張旅費申請書</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81'
+            }
+          },
+          boxShadow: { soft: '0 10px 30px -10px rgb(2 6 23 / 0.15)' }
+        }
+      }
+    }
+  </script>
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- html2pdf (pdf export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" xintegrity="sha512-YcsIP8rj7tD1qfF1Z9f8l0P/u8wT2J6JfT0QqvWk3XgW8l8S0g0bq7y1bX9cJrC7h1oU6r7fQfJx3wGvQmd2xA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    /* CSS for a beautiful UI */
+    body {
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    .dropzone.dragover { border-color: #6366f1; background: #eef2ff }
+    @media print { .no-print { display: none !important; } body { background: white; } }
+    /* iOS tap highlight */
+    * { -webkit-tap-highlight-color: transparent; }
+    .tab-btn.active {
+        background-color: #1e293b;
+        color: white;
+    }
+    .tab-btn:not(.active) {
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+    .prose h3 {
+        font-weight: 600;
+        margin-top: 1.5rem;
+    }
+    .prose p {
+        margin-top: 0.5rem;
+        line-height: 1.5;
+    }
+    .prose h4 {
+        margin-top: 1rem;
+    }
+    .prose ul {
+        margin-top: 0.5rem;
+        list-style: disc;
+        padding-left: 1.5rem;
+    }
+    /* Custom scrollbar for better aesthetics */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800">
+  <header class="sticky top-0 z-40 backdrop-blur bg-white/70 border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-500 to-indigo-300 grid place-items-center text-white shadow-soft">
+        <i data-lucide="briefcase"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-semibold">出張旅費申請書</h1>
+        <p class="text-xs text-slate-500">出張前申請・終了後報告・領収書管理・PDF/CSV出力までワンストップ</p>
+      </div>
+      <div class="ml-auto flex gap-2">
+        <button id="exportCsvBtn" class="no-print inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50">
+          <i data-lucide="table"></i><span>CSV出力</span>
+        </button>
+        <button id="exportPdfBtn" class="no-print inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-brand-600 text-white hover:bg-brand-700 shadow-soft">
+          <i data-lucide="file-down"></i><span>PDF出力</span>
+        </button>
+        <button id="resetAllBtn" class="no-print inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50">
+          <i data-lucide="rotate-ccw"></i><span>リセット</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Tabs -->
+    <div class="no-print mb-6 flex gap-2 flex-wrap">
+      <button data-tab="tab-apply" class="tab-btn active inline-flex items-center gap-2 px-4 py-2 rounded-2xl"><i data-lucide="send"></i><span>申請</span></button>
+      <button data-tab="tab-report" class="tab-btn inline-flex items-center gap-2 px-4 py-2 rounded-2xl"><i data-lucide="file-text"></i><span>報告</span></button>
+      <button data-tab="tab-dashboard" class="tab-btn inline-flex items-center gap-2 px-4 py-2 rounded-2xl"><i data-lucide="layout-dashboard"></i><span>ダッシュボード</span></button>
+      <button data-tab="tab-settings" class="tab-btn inline-flex items-center gap-2 px-4 py-2 rounded-2xl"><i data-lucide="settings"></i><span>設定</span></button>
+    </div>
+
+    <!-- Apply Tab -->
+    <section id="tab-apply" class="tab-section grid md:grid-cols-3 gap-6">
+      <!-- Application Form -->
+      <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-soft" id="applicationCard">
+        <div class="flex items-center gap-2 mb-4"><i data-lucide="send" class="text-brand-600"></i><h2 class="text-lg font-semibold">出張申請</h2></div>
+        <form id="applyForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm text-slate-600">申請タイトル</label>
+            <input type="text" id="title" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="例）札幌営業訪問" required>
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">申請者名</label>
+            <input type="text" id="applicant" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="氏名" required>
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">部署</label>
+            <input type="text" id="department" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="部署名">
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">役職区分</label>
+            <select id="role" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+              <option>役員</option>
+              <option>部長課長</option>
+              <option>その他の者</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm text-slate-600">開始日</label>
+              <input type="date" id="startDate" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" required>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">終了日</label>
+              <input type="date" id="endDate" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" required>
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-sm text-slate-600">行き先（住所／地名）</label>
+            <div class="mt-1 flex gap-2">
+              <input type="text" id="destination" class="w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="例）札幌市中央区…" required>
+              <button type="button" id="geocodeBtn" class="inline-flex items-center gap-1 rounded-xl px-3 py-2 bg-slate-900 text-white hover:bg-slate-800"><i data-lucide="map-pin"></i><span>位置取得</span></button>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">* 位置取得はOpenStreetMap Nominatimを使用します（失敗時は手入力でOK）。政令指定都市は自動推定されますが手動で上書き可能です。</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm text-slate-600">目的地 緯度</label>
+              <input type="number" id="destLat" step="any" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="43.06" required>
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">目的地 経度</label>
+              <input type="number" id="destLng" step="any" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="141.35" required>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 items-end">
+            <div>
+              <label class="text-sm text-slate-600">距離（自社から, km）</label>
+              <input type="number" id="distanceKm" step="0.1" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="自動計算 / 手入力可" required>
+            </div>
+            <button type="button" id="calcDistanceBtn" class="h-11 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 bg-brand-600 text-white hover:bg-brand-700"><i data-lucide="ruler"></i><span>距離計算</span></button>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex items-center gap-2">
+              <input id="isOrdinance" type="checkbox" class="rounded border-slate-300">
+              <label for="isOrdinance" class="text-sm text-slate-700">政令指定都市に該当</label>
+            </div>
+            <p id="ordinanceHint" class="text-xs text-slate-500 self-center">（行き先から自動推定：-）</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm text-slate-600">宿泊数（泊）</label>
+              <input type="number" id="nights" min="0" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" value="0">
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">（参考）宿泊単価 自動適用</label>
+              <input type="number" id="lodgingRate" min="0" step="100" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" value="0" readonly>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm text-slate-600">交通費（円）</label>
+              <input type="number" id="transport" min="0" step="100" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" value="0">
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">その他費用（円）</label>
+              <input type="number" id="otherCost" min="0" step="100" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" value="0">
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-sm text-slate-600">領収書アップロード</label>
+            <div id="dropzone" class="dropzone mt-2 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer">
+              <div class="flex flex-col items-center gap-2 text-slate-500">
+                <i data-lucide="upload"></i>
+                <p class="text-sm">ここにドラッグ＆ドロップ または クリックして選択（画像 / PDF 可, 複数）</p>
+                <input id="receiptInput" type="file" accept="image/*,application/pdf" multiple class="hidden" />
+              </div>
+            </div>
+            <div id="receiptPreview" class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+          </div>
+
+          <div class="md:col-span-2 flex justify-end gap-3 mt-2">
+            <button type="button" id="calcBtn" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50"><i data-lucide="calculator"></i><span>見積計算</span></button>
+            <button type="submit" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-slate-900 text-white hover:bg-slate-800"><i data-lucide="save"></i><span>申請を保存</span></button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Summary Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft">
+        <div class="flex items-center gap-2 mb-3"><i data-lucide="wallet" class="text-brand-600"></i><h3 class="font-semibold">費用サマリー</h3></div>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span>日当</span><span id="perDiemDisplay">-</span></div>
+          <div class="flex justify-between"><span>宿泊料</span><span id="lodgingDisplay">-</span></div>
+          <div class="flex justify-between"><span>交通費</span><span id="transportDisplay">-</span></div>
+          <div class="flex justify-between"><span>その他</span><span id="otherDisplay">-</span></div>
+          <hr class="my-2">
+          <div class="flex justify-between font-semibold text-slate-900 text-base"><span>合計</span><span id="totalDisplay">-</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Report Tab -->
+    <section id="tab-report" class="tab-section hidden grid md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-soft" id="reportCard">
+        <div class="flex items-center gap-2 mb-4"><i data-lucide="file-text" class="text-brand-600"></i><h2 class="text-lg font-semibold">出張報告</h2></div>
+        <form id="reportForm" class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="text-sm text-slate-600">対象申請</label>
+            <select id="reportTripSelect" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500"></select>
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">業務内容・成果</label>
+            <textarea id="reportBody" rows="6" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="訪問先 / 実施内容 / 成果 を簡潔に"></textarea>
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">次回アクション</label>
+            <textarea id="reportNext" rows="4" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="フォロータスク等"></textarea>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-slate-900 text-white hover:bg-slate-800"><i data-lucide="save"></i><span>報告を保存</span></button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft">
+        <div class="flex items-center gap-2 mb-3"><i data-lucide="list-checks" class="text-brand-600"></i><h3 class="font-semibold">レポートプレビュー</h3></div>
+        <div id="reportPreview" class="prose prose-sm max-w-none"><p class="text-slate-500 text-sm">左のフォームを保存すると、ここにプレビューが表示されます。</p></div>
+      </div>
+    </section>
+
+    <!-- Dashboard Tab -->
+    <section id="tab-dashboard" class="tab-section hidden space-y-6">
+      <div class="grid md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft"><p class="text-xs text-slate-500">今月の申請数</p><p id="statCount" class="text-3xl font-semibold mt-1">0</p></div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft"><p class="text-xs text-slate-500">今月の合計費用</p><p id="statTotal" class="text-3xl font-semibold mt-1">¥0</p></div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft"><p class="text-xs text-slate-500">平均距離</p><p id="statAvgKm" class="text-3xl font-semibold mt-1">0 km</p></div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft"><p class="text-xs text-slate-500">保存済みレシート</p><p id="statReceipts" class="text-3xl font-semibold mt-1">0</p></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft">
+        <div class="flex items-center gap-2 mb-3"><i data-lucide="table"></i><h3 class="font-semibold">申請一覧</h3></div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr class="text-left text-slate-600">
+                <th class="py-2 px-3">タイトル</th>
+                <th class="py-2 px-3">期間</th>
+                <th class="py-2 px-3">申請者</th>
+                <th class="py-2 px-3">役職</th>
+                <th class="py-2 px-3">行き先</th>
+                <th class="py-2 px-3">距離</th>
+                <th class="py-2 px-3">政令</th>
+                <th class="py-2 px-3">合計費用</th>
+                <th class="py-2 px-3">報告</th>
+                <th class="py-2 px-3">領収書</th>
+                <th class="py-2 px-3">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tripTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings Tab -->
+    <section id="tab-settings" class="tab-section hidden grid md:grid-cols-2 gap-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft">
+        <div class="flex items-center gap-2 mb-4"><i data-lucide="settings" class="text-brand-600"></i><h2 class="text-lg font-semibold">会社情報</h2></div>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="text-sm text-slate-600">会社名</label>
+            <input type="text" id="orgName" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="例）株式会社〇〇">
+          </div>
+          <div>
+            <label class="text-sm text-slate-600">自社住所</label>
+            <div class="mt-1 flex gap-2">
+              <input type="text" id="orgAddress" class="w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="住所">
+              <button type="button" id="orgGeocodeBtn" class="inline-flex items-center gap-1 rounded-xl px-3 py-2 bg-slate-900 text-white hover:bg-slate-800"><i data-lucide="map"></i><span>位置取得</span></button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm text-slate-600">自社 緯度</label>
+              <input type="number" id="orgLat" step="any" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="">
+            </div>
+            <div>
+              <label class="text-sm text-slate-600">自社 経度</label>
+              <input type="number" id="orgLng" step="any" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500" placeholder="">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-soft">
+        <div class="flex items-center gap-2 mb-4"><i data-lucide="calculator" class="text-brand-600"></i><h2 class="text-lg font-semibold">規程（役職別）</h2></div>
+        <div class="space-y-6" id="roleRulesWrap">
+          <!-- 各役職カードをJSで描画 -->
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button id="saveSettingsBtn" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-slate-900 text-white hover:bg-slate-800"><i data-lucide="save"></i><span>設定保存</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Invisible area for PDF capture -->
+    <section id="pdfArea" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-soft mt-10 hidden">
+        <div id="pdfContent">
+            <h2 class="text-xl font-semibold mb-2">出張旅費申請・報告（PDF出力用）</h2>
+            <div id="pdfInner"></div>
+        </div>
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <div id="receiptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">領収書</h3>
+        <button id="closeModalBtn" class="text-slate-500 hover:text-slate-700">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="modalContent" class="flex-grow overflow-y-auto space-y-4"></div>
+    </div>
+  </div>
+
+  <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full">
+      <div id="messageText" class="text-center text-lg font-medium"></div>
+      <div class="flex justify-center mt-4">
+        <button id="closeMessageBtn" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-slate-900 text-white hover:bg-slate-800">
+          <span>OK</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    // --- Constants ---
+    const ORDINANCE_CITIES = ['札幌市','仙台市','さいたま市','千葉市','横浜市','川崎市','相模原市','新潟市','静岡市','浜松市','名古屋市','京都市','大阪市','堺市','神戸市','岡山市','広島市','北九州市','福岡市','熊本市'];
+
+    // --- Utilities ---
+    const yen = n => `¥${Number(n||0).toLocaleString()}`;
+    const km = n => `${Number(n||0).toFixed(1)} km`;
+    const toCSV = rows => rows.map(r=> r.map(v=> {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+    }).join(',')).join('\n');
+
+    const formatISO = d => d.toISOString().split('T')[0];
+
+    function haversine(lat1, lon1, lat2, lon2){
+      const R = 6371; const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2-lat1); const dLon = toRad(lon2-lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    async function geocode(query){
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'ja' } });
+      if(!res.ok) throw new Error('geocode failed');
+      const data = await res.json();
+      if(!data.length) throw new Error('no result');
+      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+    }
+
+    function showMessage(text) {
+      const modal = document.getElementById('messageModal');
+      document.getElementById('messageText').textContent = text;
+      modal.classList.remove('hidden');
+      document.getElementById('closeMessageBtn').onclick = () => {
+        modal.classList.add('hidden');
+      };
+    }
+
+    // --- Local Storage State ---
+    const store = {
+      get key(){ return 'biztrip.v2'; },
+      load(){ try { return JSON.parse(localStorage.getItem(this.key)) || {}; } catch(e){ return {}; } },
+      save(obj){ localStorage.setItem(this.key, JSON.stringify(obj)); }
+    };
+
+    const defaultRoleRules = () => ({
+      perDiemRules: [ // 距離ベース日当（編集可）
+        {min:100, max:999999, amount:3000},
+        {min:50, max:100, amount:2000},
+        {min:10, max:50, amount:1000},
+        {min:0, max:10, amount:0}
+      ],
+      lodging: { ordinance: 10000, other: 8000 }
+    });
+
+    const state = Object.assign({
+      org: { name: '', address: '', lat: null, lng: null },
+      roles: {
+        '役員': defaultRoleRules(),
+        '部長課長': defaultRoleRules(),
+        'その他の者': defaultRoleRules()
+      },
+      trips: [], // {id, title, applicant, dept, role, start, end, dest, lat, lng, km, ordinance, nights, lodgingRate, transport, other, perDiem, lodging, total, receipts:[{name,type,dataUrl}]}
+      reports: [] // {tripId, body, next}
+    }, store.load());
+
+    function persist(){ store.save({ org: state.org, roles: state.roles, trips: state.trips, reports: state.reports }); refreshUI(); }
+
+    // --- Tabs ---
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const sections = document.querySelectorAll('.tab-section');
+    tabBtns.forEach(btn=>btn.addEventListener('click', ()=>{
+      tabBtns.forEach(b=>{
+        b.classList.remove('active');
+        b.classList.add('bg-white', 'border', 'border-slate-200');
+        b.classList.remove('bg-slate-900', 'text-white');
+      });
+      btn.classList.add('active');
+      btn.classList.remove('bg-white', 'border', 'border-slate-200');
+      btn.classList.add('bg-slate-900', 'text-white');
+      sections.forEach(s=>s.classList.add('hidden'));
+      document.getElementById(btn.dataset.tab).classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }));
+
+    // --- Settings UI ---
+    const orgName = document.getElementById('orgName');
+    const orgAddress = document.getElementById('orgAddress');
+    const orgLat = document.getElementById('orgLat');
+    const orgLng = document.getElementById('orgLng');
+    const orgGeocodeBtn = document.getElementById('orgGeocodeBtn');
+
+    function renderRoleRules(){
+      const wrap = document.getElementById('roleRulesWrap');
+      wrap.innerHTML = '';
+      Object.entries(state.roles).forEach(([role, cfg])=>{
+        const card = document.createElement('div');
+        card.className = 'border border-slate-200 rounded-2xl p-4';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">${role}</h3>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs text-slate-500 mb-1">宿泊料（1泊）</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-slate-500">政令指定都市</label>
+                  <input type="number" data-role="${role}" data-k="ordinance" value="${cfg.lodging.ordinance}" step="100" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500">その他</label>
+                  <input type="number" data-role="${role}" data-k="other" value="${cfg.lodging.other}" step="100" class="mt-1 w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500">
+                </div>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 mb-1">日当（距離km帯）</p>
+              <div class="space-y-2" data-perdiem-list="${role}">
+                ${cfg.perDiemRules.sort((a,b)=>b.min-a.min).map((r,i)=>`
+                  <div class='grid grid-cols-12 gap-2 items-end'>
+                    <input data-role="${role}" data-i="${i}" data-k="min" type='number' value='${r.min}' class='col-span-4 mt-1 rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500'>
+                    <input data-role="${role}" data-i="${i}" data-k="max" type='number' value='${r.max}' class='col-span-4 mt-1 rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500'>
+                    <input data-role="${role}" data-i="${i}" data-k="amount" type='number' value='${r.amount}' step='100' class='col-span-3 mt-1 rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500'>
+                    <button type="button" data-role="${role}" data-i="${i}" class='col-span-1 removeRule inline-flex items-center justify-center rounded-xl h-10 bg-white border border-slate-200 hover:bg-slate-50'><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                  </div>`).join('')}
+                <button type="button" data-add="${role}" class='mt-2 inline-flex items-center gap-2 rounded-xl px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50'><i data-lucide="plus"></i><span>ルール追加</span></button>
+              </div>
+            </div>
+          </div>`;
+        wrap.appendChild(card);
+      });
+      lucide.createIcons();
+
+      // bind lodging inputs
+      wrap.querySelectorAll('input[data-k]')?.forEach(inp=>{
+        inp.addEventListener('change', e=>{
+          const role = e.target.dataset.role; const k = e.target.dataset.k;
+          state.roles[role].lodging[k] = Number(e.target.value); persist();
+        });
+      });
+      // bind per diem
+      wrap.querySelectorAll('input[data-i]')?.forEach(inp=>{
+        inp.addEventListener('change', e=>{
+          const { role, i, k } = e.target.dataset; state.roles[role].perDiemRules[i][k] = Number(e.target.value); persist();
+        });
+      });
+      wrap.querySelectorAll('.removeRule')?.forEach(btn=>{
+        btn.addEventListener('click', e=>{ const role = e.currentTarget.dataset.role; const i = Number(e.currentTarget.dataset.i); state.roles[role].perDiemRules.splice(i,1); persist(); renderRoleRules(); });
+      });
+      wrap.querySelectorAll('button[data-add]')?.forEach(btn=>{
+        btn.addEventListener('click', e=>{ const role = e.currentTarget.dataset.add; state.roles[role].perDiemRules.push({min:0,max:0,amount:0}); persist(); renderRoleRules(); });
+      });
+    }
+
+    function loadSettings(){
+      orgName.value = state.org.name || ''; orgAddress.value = state.org.address || '';
+      orgLat.value = state.org.lat ?? ''; orgLng.value = state.org.lng ?? '';
+      renderRoleRules();
+    }
+
+    document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+      state.org.name = orgName.value; state.org.address = orgAddress.value;
+      state.org.lat = parseFloat(orgLat.value); state.org.lng = parseFloat(orgLng.value);
+      persist(); showMessage('設定を保存しました。');
+    });
+
+    orgGeocodeBtn.addEventListener('click', async ()=>{
+      if(!orgAddress.value) return showMessage('住所を入力してください');
+      try{ const res = await geocode(orgAddress.value); orgLat.value = res.lat; orgLng.value = res.lon; persist(); showMessage('自社位置を取得しました'); }
+      catch(err){ showMessage('位置取得に失敗しました'); }
+    });
+
+    // --- Apply Form ---
+    const applyForm = document.getElementById('applyForm');
+    const geocodeBtn = document.getElementById('geocodeBtn');
+    const calcDistanceBtn = document.getElementById('calcDistanceBtn');
+    const calcBtn = document.getElementById('calcBtn');
+    const receiptInput = document.getElementById('receiptInput');
+    const dropzone = document.getElementById('dropzone');
+    const preview = document.getElementById('receiptPreview');
+    const ordinanceCheckbox = document.getElementById('isOrdinance');
+    const ordinanceHint = document.getElementById('ordinanceHint');
+    let currentReceipts = [];
+
+    function rulePerDiem(distanceKm, role){
+      const list = [...state.roles[role].perDiemRules].sort((a,b)=>b.min-a.min);
+      const r = list.find(r=>distanceKm >= r.min && distanceKm < r.max);
+      return r ? r.amount : 0;
+    }
+
+    function lodgingRateFor(role, isOrdinance){
+      const l = state.roles[role].lodging;
+      return isOrdinance ? Number(l.ordinance||0) : Number(l.other||0);
+    }
+
+    function updateAutoRates(){
+      const role = document.getElementById('role').value;
+      const isOrd = ordinanceCheckbox.checked;
+      document.getElementById('lodgingRate').value = lodgingRateFor(role, isOrd);
+    }
+
+    function calcSummary(){
+      const role = document.getElementById('role').value;
+      const nights = Number(document.getElementById('nights').value||0);
+      const rate = Number(document.getElementById('lodgingRate').value||0);
+      const lodging = nights * rate;
+      const distance = Number(document.getElementById('distanceKm').value||0);
+      const perDiem = rulePerDiem(distance, role);
+      const transport = Number(document.getElementById('transport').value||0);
+      const other = Number(document.getElementById('otherCost').value||0);
+      const total = perDiem + lodging + transport + other;
+      document.getElementById('perDiemDisplay').textContent = yen(perDiem);
+      document.getElementById('lodgingDisplay').textContent = yen(lodging);
+      document.getElementById('transportDisplay').textContent = yen(transport);
+      document.getElementById('otherDisplay').textContent = yen(other);
+      document.getElementById('totalDisplay').textContent = yen(total);
+      return { perDiem, lodging, total };
+    }
+
+    calcBtn.addEventListener('click', ()=>{ updateAutoRates(); calcSummary(); });
+    document.getElementById('role').addEventListener('change', ()=>{ updateAutoRates(); calcSummary(); });
+    ordinanceCheckbox.addEventListener('change', ()=>{ updateAutoRates(); calcSummary(); });
+
+    geocodeBtn.addEventListener('click', async ()=>{
+      const q = document.getElementById('destination').value.trim();
+      if(!q) return showMessage('行き先を入力してください');
+      try{
+        const res = await geocode(q);
+        document.getElementById('destLat').value = res.lat;
+        document.getElementById('destLng').value = res.lon;
+        const isOrd = ORDINANCE_CITIES.some(name => res.display.includes(name) || q.includes(name));
+        ordinanceCheckbox.checked = isOrd;
+        ordinanceHint.textContent = `（行き先から自動推定：${isOrd ? '政令指定都市' : 'その他'}）`;
+        if(state.org.lat && state.org.lng){
+          const d = haversine(state.org.lat, state.org.lng, res.lat, res.lon);
+          document.getElementById('distanceKm').value = d.toFixed(1);
+        }
+        updateAutoRates(); calcSummary();
+      }catch(err){ showMessage('位置取得に失敗しました'); }
+    });
+
+    calcDistanceBtn.addEventListener('click', ()=>{
+      const lat = parseFloat(document.getElementById('destLat').value);
+      const lng = parseFloat(document.getElementById('destLng').value);
+      if(!(state.org.lat && state.org.lng)) return showMessage('設定で自社位置（緯度・経度）を登録してください');
+      if(isNaN(lat) || isNaN(lng)) return showMessage('目的地の緯度経度を入力してください');
+      const d = haversine(state.org.lat, state.org.lng, lat, lng);
+      document.getElementById('distanceKm').value = d.toFixed(1);
+      updateAutoRates(); calcSummary();
+    });
+
+    // Receipts: drag & drop + preview
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, () => dropzone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, () => dropzone.classList.remove('dragover'), false);
+    });
+
+    dropzone.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      handleReceipts(files);
+    });
+
+    dropzone.addEventListener('click', () => {
+      receiptInput.click();
+    });
+
+    receiptInput.addEventListener('change', e => {
+      handleReceipts(e.target.files);
+    });
+
+    function handleReceipts(files) {
+      Array.from(files).forEach(file => {
+        if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            currentReceipts.push({ name: file.name, type: file.type, dataUrl: e.target.result });
+            renderReceipts();
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    function renderReceipts(receipts = currentReceipts) {
+      preview.innerHTML = '';
+      receipts.forEach((r, i) => {
+        const item = document.createElement('div');
+        item.className = 'relative group cursor-pointer rounded-xl overflow-hidden shadow-sm border border-slate-200';
+        item.dataset.index = i;
+        if(r.type === 'application/pdf'){
+          item.innerHTML = `
+            <div class="absolute inset-0 bg-slate-100 flex items-center justify-center text-slate-500">
+              <i data-lucide="file-text" class="w-12 h-12"></i>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 p-2 text-xs truncate text-center bg-slate-800 text-white">${r.name}</div>
+          `;
+        } else {
+          item.innerHTML = `
+            <img src="${r.dataUrl}" alt="${r.name}" class="object-cover w-full h-32">
+            <div class="absolute bottom-0 left-0 right-0 p-2 text-xs truncate text-center bg-slate-800 text-white">${r.name}</div>
+          `;
+        }
+        item.addEventListener('click', (e) => showReceiptModal(receipts, i));
+        preview.appendChild(item);
+      });
+      lucide.createIcons();
+    }
+
+    function showReceiptModal(receipts, startIndex) {
+      const modal = document.getElementById('receiptModal');
+      const modalContent = document.getElementById('modalContent');
+      modalContent.innerHTML = '';
+      receipts.forEach(r => {
+        const imgContainer = document.createElement('div');
+        if (r.type === 'application/pdf') {
+          imgContainer.innerHTML = `<embed src="${r.dataUrl}" type="application/pdf" width="100%" height="500px" />`;
+        } else {
+          imgContainer.innerHTML = `<img src="${r.dataUrl}" alt="${r.name}" class="max-w-full h-auto">`;
+        }
+        modalContent.appendChild(imgContainer);
+      });
+      modal.classList.remove('hidden');
+
+      document.getElementById('closeModalBtn').onclick = () => {
+        modal.classList.add('hidden');
+      };
+    }
+
+    applyForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const summary = calcSummary();
+      const newTrip = {
+        id: crypto.randomUUID(),
+        title: document.getElementById('title').value,
+        applicant: document.getElementById('applicant').value,
+        department: document.getElementById('department').value,
+        role: document.getElementById('role').value,
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        destination: document.getElementById('destination').value,
+        lat: parseFloat(document.getElementById('destLat').value),
+        lng: parseFloat(document.getElementById('destLng').value),
+        km: parseFloat(document.getElementById('distanceKm').value),
+        ordinance: document.getElementById('isOrdinance').checked,
+        nights: Number(document.getElementById('nights').value),
+        lodgingRate: Number(document.getElementById('lodgingRate').value),
+        transport: Number(document.getElementById('transport').value),
+        other: Number(document.getElementById('otherCost').value),
+        perDiem: summary.perDiem,
+        lodging: summary.lodging,
+        total: summary.total,
+        receipts: currentReceipts
+      };
+      state.trips.push(newTrip);
+      persist();
+      showMessage('申請が保存されました！');
+      applyForm.reset();
+      currentReceipts = [];
+      renderReceipts();
+      document.getElementById('perDiemDisplay').textContent = '-';
+      document.getElementById('lodgingDisplay').textContent = '-';
+      document.getElementById('transportDisplay').textContent = '-';
+      document.getElementById('otherDisplay').textContent = '-';
+      document.getElementById('totalDisplay').textContent = '-';
+    });
+
+    // --- Report Form ---
+    const reportForm = document.getElementById('reportForm');
+    const reportTripSelect = document.getElementById('reportTripSelect');
+    const reportPreview = document.getElementById('reportPreview');
+
+    function renderReportSelect(){
+      reportTripSelect.innerHTML = '';
+      const defaultOption = document.createElement('option');
+      defaultOption.textContent = '対象の出張申請を選択...';
+      defaultOption.value = '';
+      reportTripSelect.appendChild(defaultOption);
+
+      state.trips.forEach(t=>{
+        const option = document.createElement('option');
+        option.value = t.id;
+        option.textContent = `${t.title} (${t.startDate})`;
+        reportTripSelect.appendChild(option);
+      });
+    }
+
+    reportTripSelect.addEventListener('change', ()=>{
+      const tripId = reportTripSelect.value;
+      const report = state.reports.find(r=>r.tripId === tripId);
+      document.getElementById('reportBody').value = report?.body || '';
+      document.getElementById('reportNext').value = report?.next || '';
+      renderReportPreview();
+    });
+
+    reportForm.addEventListener('submit', e=>{
+      e.preventDefault();
+      const tripId = document.getElementById('reportTripSelect').value;
+      if(!tripId) return showMessage('対象の出張申請を選択してください。');
+
+      const body = document.getElementById('reportBody').value;
+      const next = document.getElementById('reportNext').value;
+      const reportIndex = state.reports.findIndex(r=>r.tripId === tripId);
+      if(reportIndex > -1){
+        state.reports[reportIndex].body = body;
+        state.reports[reportIndex].next = next;
+      } else {
+        state.reports.push({ tripId, body, next });
+      }
+      persist();
+      showMessage('報告書が保存されました！');
+      renderReportPreview();
+    });
+
+    function renderReportPreview(){
+      const tripId = document.getElementById('reportTripSelect').value;
+      const trip = state.trips.find(t=>t.id === tripId);
+      const report = state.reports.find(r=>r.tripId === tripId);
+
+      if(!trip) {
+        reportPreview.innerHTML = '<p class="text-slate-500 text-sm">左のフォームを保存すると、ここにプレビューが表示されます。</p>';
+        return;
+      }
+
+      const nights = trip.nights;
+      const days = (new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
+
+      const html = `
+        <div class="prose prose-sm max-w-none space-y-4">
+          <h3>出張報告書</h3>
+          <p class="text-sm">作成日: ${formatISO(new Date())}</p>
+          <h4>出張概要</h4>
+          <p>
+            <strong>タイトル:</strong> ${trip.title} <br>
+            <strong>申請者:</strong> ${trip.applicant} (${trip.department || '所属不明'}, ${trip.role}) <br>
+            <strong>期間:</strong> ${trip.startDate} - ${trip.endDate} (${days}日間, ${nights}泊) <br>
+            <strong>行き先:</strong> ${trip.destination} (${km(trip.km)} / ${trip.ordinance ? '政令指定都市' : 'その他'})
+          </p>
+          <h4>費用明細</h4>
+          <ul>
+            <li>日当: ${yen(trip.perDiem)}</li>
+            <li>宿泊料: ${yen(trip.lodging)}</li>
+            <li>交通費: ${yen(trip.transport)}</li>
+            <li>その他: ${yen(trip.other)}</li>
+          </ul>
+          <p><strong>合計費用:</strong> ${yen(trip.total)}</p>
+          ${report ? `
+            <h4>業務内容・成果</h4>
+            <p>${report.body || '未記入'}</p>
+            <h4>次回アクション</h4>
+            <p>${report.next || '未記入'}</p>
+          ` : '<p class="text-slate-500">※報告書は未記入です。</p>'}
+        </div>
+      `;
+      reportPreview.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    // --- Dashboard UI ---
+    const statCount = document.getElementById('statCount');
+    const statTotal = document.getElementById('statTotal');
+    const statAvgKm = document.getElementById('statAvgKm');
+    const statReceipts = document.getElementById('statReceipts');
+    const tripTableBody = document.getElementById('tripTableBody');
+
+    function renderDashboard(){
+      const today = new Date();
+      const thisMonthTrips = state.trips.filter(t=>{
+        const d = new Date(t.startDate);
+        return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+      });
+      const totalCost = thisMonthTrips.reduce((sum, t) => sum + t.total, 0);
+      const totalKm = thisMonthTrips.reduce((sum, t) => sum + t.km, 0);
+      const avgKm = thisMonthTrips.length > 0 ? totalKm / thisMonthTrips.length : 0;
+      const totalReceipts = state.trips.reduce((sum, t) => sum + t.receipts.length, 0);
+
+      statCount.textContent = thisMonthTrips.length;
+      statTotal.textContent = yen(totalCost);
+      statAvgKm.textContent = km(avgKm);
+      statReceipts.textContent = totalReceipts;
+
+      // Table
+      tripTableBody.innerHTML = '';
+      state.trips.slice().reverse().forEach(trip=>{
+        const report = state.reports.find(r=>r.tripId === trip.id);
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50';
+        row.innerHTML = `
+          <td class="py-2 px-3 truncate max-w-[150px]">${trip.title}</td>
+          <td class="py-2 px-3 whitespace-nowrap">${trip.startDate} - ${trip.endDate}</td>
+          <td class="py-2 px-3 whitespace-nowrap">${trip.applicant}</td>
+          <td class="py-2 px-3 whitespace-nowrap">${trip.role}</td>
+          <td class="py-2 px-3 truncate max-w-[150px]">${trip.destination}</td>
+          <td class="py-2 px-3 whitespace-nowrap">${km(trip.km)}</td>
+          <td class="py-2 px-3 text-center">${trip.ordinance ? '〇' : 'ー'}</td>
+          <td class="py-2 px-3 whitespace-nowrap font-semibold">${yen(trip.total)}</td>
+          <td class="py-2 px-3 text-center">${report ? '済' : '未'}</td>
+          <td class="py-2 px-3 text-center">${trip.receipts.length}枚</td>
+          <td class="py-2 px-3 text-center whitespace-nowrap">
+            <button class="view-btn inline-flex items-center gap-1 text-xs text-brand-600 hover:underline" data-id="${trip.id}">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+            <button class="delete-btn inline-flex items-center gap-1 text-xs text-slate-500 hover:underline ml-2" data-id="${trip.id}">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tripTableBody.appendChild(row);
+      });
+      lucide.createIcons();
+
+      tripTableBody.querySelectorAll('.view-btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const tripId = e.currentTarget.dataset.id;
+          const trip = state.trips.find(t=>t.id === tripId);
+          if (trip && trip.receipts.length > 0) {
+            showReceiptModal(trip.receipts, 0);
+          } else {
+            showMessage('この申請には領収書がありません。');
+          }
+        });
+      });
+
+      tripTableBody.querySelectorAll('.delete-btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const tripId = e.currentTarget.dataset.id;
+          if(confirm('この申請を削除しますか？')){
+            state.trips = state.trips.filter(t=>t.id !== tripId);
+            state.reports = state.reports.filter(r=>r.tripId !== tripId);
+            persist();
+          }
+        });
+      });
+    }
+
+    // --- Export Functions ---
+    document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
+      if(state.trips.length === 0) return showMessage('出力するデータがありません。');
+      const header = ["タイトル","申請者","部署","役職","開始日","終了日","行き先","緯度","経度","距離(km)","政令指定都市","宿泊数","日当","宿泊料","交通費","その他費用","合計費用","業務内容・成果","次回アクション"];
+      const rows = state.trips.map(t=>{
+        const report = state.reports.find(r=>r.tripId === t.id);
+        return [
+          t.title, t.applicant, t.department, t.role, t.startDate, t.endDate,
+          t.destination, t.lat, t.lng, t.km, t.ordinance ? '〇' : 'ー',
+          t.nights, t.perDiem, t.lodging, t.transport, t.other, t.total,
+          report?.body || '', report?.next || ''
+        ];
+      });
+      const csv = '\ufeff' + toCSV([header, ...rows]); // UTF-8 BOM
+      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `出張旅費申請一覧_${formatISO(new Date())}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('exportPdfBtn').addEventListener('click', ()=>{
+      const pdfArea = document.getElementById('pdfArea');
+      const pdfInner = document.getElementById('pdfInner');
+      
+      pdfArea.classList.remove('hidden');
+      pdfInner.innerHTML = '';
+      
+      const tripsWithReports = state.trips.map(t => ({
+        ...t,
+        report: state.reports.find(r => r.tripId === t.id)
+      }));
+
+      tripsWithReports.forEach(trip => {
+        const nights = (new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
+        const tripHtml = `
+            <div class="prose prose-sm max-w-none space-y-4 mb-8 p-4 border border-slate-200 rounded-xl shadow-sm">
+                <h3>出張旅費申請・報告書</h3>
+                <p><strong>申請タイトル:</strong> ${trip.title}</p>
+                <p><strong>申請者:</strong> ${trip.applicant} (${trip.department}, ${trip.role})</p>
+                <p><strong>期間:</strong> ${trip.startDate} - ${trip.endDate} (${nights}日間, ${trip.nights}泊)</p>
+                <p><strong>行き先:</strong> ${trip.destination} (${km(trip.km)})</p>
+                <div class="grid grid-cols-2">
+                    <div>
+                        <h4>費用内訳</h4>
+                        <ul>
+                            <li>日当: ${yen(trip.perDiem)}</li>
+                            <li>宿泊料: ${yen(trip.lodging)}</li>
+                            <li>交通費: ${yen(trip.transport)}</li>
+                            <li>その他: ${yen(trip.other)}</li>
+                        </ul>
+                        <p><strong>合計費用:</strong> ${yen(trip.total)}</p>
+                    </div>
+                    <div>
+                        <h4>業務報告</h4>
+                        <p><strong>業務内容・成果:</strong> ${trip.report?.body || '未記入'}</p>
+                        <p><strong>次回アクション:</strong> ${trip.report?.next || '未記入'}</p>
+                    </div>
+                </div>
+                ${trip.receipts.length > 0 ? `
+                    <h4>領収書 (${trip.receipts.length}枚)</h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        ${trip.receipts.map(r => `
+                            <img src="${r.dataUrl}" alt="${r.name}" class="w-full h-auto object-cover rounded-md">
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        pdfInner.innerHTML += tripHtml;
+      });
+
+      const element = document.getElementById('pdfContent');
+      const opt = {
+        margin:       1,
+        filename:     `出張旅費申請書_${formatISO(new Date())}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, logging: false, useCORS: true },
+        jsPDF:        { unit: 'cm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(()=>{
+        pdfArea.classList.add('hidden');
+      });
+    });
+
+    document.getElementById('resetAllBtn').addEventListener('click', ()=>{
+      if(confirm('すべてのデータを完全に削除しますか？この操作は元に戻せません。')){
+        localStorage.removeItem(store.key);
+        window.location.reload();
+      }
+    });
+
+    // --- Initial Load ---
+    function refreshUI(){
+      loadSettings();
+      renderReportSelect();
+      renderReportPreview();
+      renderDashboard();
+    }
+
+    refreshUI();
+    lucide.createIcons();
+    
+    // Ensure UI updates on hash changes or page load.
+    window.addEventListener('load', refreshUI);
+  </script>
+</body>
+</html>
